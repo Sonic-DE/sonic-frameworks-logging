@@ -52,10 +52,19 @@ target_link_libraries(sonicloggingtestplugin PRIVATE Sonic::Logging Qt6::Core)
 add_library(sonicloggingtestdlopen MODULE testlibdlopen.cpp)
 target_link_libraries(sonicloggingtestdlopen PRIVATE Sonic::Logging Qt6::Core)
 
+# Stand-ins for a SonicDE plugin and a plugin from someone else (e.g. KDE), both loaded with dlopen().
+add_library(sonicloggingtestqtpluginsonic MODULE testqtpluginsonic.cpp)
+add_library(sonicloggingtestqtpluginforeign MODULE testqtpluginforeign.cpp)
+foreach(testplugin sonicloggingtestqtpluginsonic sonicloggingtestqtpluginforeign)
+    target_link_libraries(${testplugin} PRIVATE Sonic::Logging Qt6::Core)
+endforeach()
+
 add_executable(loggingtesthelper loggingtesthelper.cpp)
 target_compile_definitions(loggingtesthelper PRIVATE
     TEST_PLUGIN_PATH="$<TARGET_FILE:sonicloggingtestplugin>"
     TEST_DLOPEN_PATH="$<TARGET_FILE:sonicloggingtestdlopen>"
+    TEST_QT_PLUGIN_SONIC_PATH="$<TARGET_FILE:sonicloggingtestqtpluginsonic>"
+    TEST_QT_PLUGIN_FOREIGN_PATH="$<TARGET_FILE:sonicloggingtestqtpluginforeign>"
 )
 target_link_libraries(loggingtesthelper PRIVATE
     Sonic::Logging
@@ -68,7 +77,7 @@ target_link_libraries(loggingtesthelper PRIVATE
     sonicloggingtestrelease
     ${CMAKE_DL_LIBS}
 )
-add_dependencies(loggingtesthelper sonicloggingtestplugin sonicloggingtestdlopen)
+add_dependencies(loggingtesthelper sonicloggingtestplugin sonicloggingtestdlopen sonicloggingtestqtpluginsonic sonicloggingtestqtpluginforeign)
 
 add_executable(loggingtest loggingtest.cpp)
 target_compile_definitions(loggingtest PRIVATE HELPER_PATH="$<TARGET_FILE:loggingtesthelper>")

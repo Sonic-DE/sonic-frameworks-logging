@@ -22,6 +22,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <thread>
+#include <tuple>
 #include <vector>
 
 #include <dlfcn.h>
@@ -458,6 +459,18 @@ int main(int argc, char** argv)
         qDebug("substring QRhiBufferData debug");
         qWarning("substring QRhiBufferData warning");
         qDebug("plain-debug-kept");
+    } else if (scenario == QLatin1String("plugins")) {
+        // Neither is Qt's; only a qt.* category used from the foreign one is.
+        using MessagesFunction = void (*)(const char*);
+        for (const auto& [path, symbol, text] : {std::tuple{TEST_QT_PLUGIN_SONIC_PATH, "sonicLoggingTestQtPluginSonic", "sonic-plugin"},
+                 std::tuple{TEST_QT_PLUGIN_FOREIGN_PATH, "sonicLoggingTestQtPluginForeign", "foreign-plugin"}}) {
+            void* handle = dlopen(path, RTLD_NOW | RTLD_LOCAL);
+            if (!handle) {
+                report("DLOPEN_ERROR", dlerror());
+                return 3;
+            }
+            reinterpret_cast<MessagesFunction>(dlsym(handle, symbol))(text);
+        }
     } else if (scenario == QLatin1String("buildtype")) {
         debugBuildMessages(QStringLiteral("debug-lib"));
         releaseBuildMessages(QStringLiteral("release-lib"));

@@ -369,6 +369,7 @@ private Q_SLOTS:
     void components();
     void componentDebugRule();
     void filtering();
+    void pluginMessages();
     void buildTypeDefault();
     void journald();
     void capture_data();
@@ -817,6 +818,32 @@ void LoggingTest::filtering()
     }
     for (const QByteArray kept : {"qt-category-warning", "fake-qt warning", "dropped-category-warning", "QRhiBufferData warning", "plain-debug-kept"}) {
         QVERIFY2(content.contains(kept), kept.constData());
+    }
+}
+
+void LoggingTest::pluginMessages()
+{
+    // Only qt.* categories and libQt6 libraries are Qt's; a plugin's own messages are kept, with or without a
+    // component, wherever it is installed.
+    Sandbox sandbox;
+    QProcessEnvironment env = sandbox.environment();
+    // Release builds start components at info, and qt.* debug is off by default; the rules make every message
+    // reach the handler, so only the handler's own filtering is tested.
+    env.insert(QStringLiteral("QT_LOGGING_RULES"),
+        QStringLiteral("org.sonicde.test.qtplugin.debug=true\nforeign.plugin.debug=true\nqt.foreign.plugin.debug=true"));
+    QCOMPARE(run(QStringList{QStringLiteral("plugins")} + sandbox.userArgs(), env).exitCode, 0);
+    const QByteArray content = readFile(sandbox.userLog());
+    for (const QByteArray kept : {"[org.sonicde.test.qtplugin] sonic-plugin debug",
+             "[org.sonicde.test.qtplugin] sonic-plugin info",
+             "[org.sonicde.test.qtplugin] sonic-plugin warning",
+             "foreign-plugin debug",
+             "foreign-plugin info",
+             "foreign-plugin warning",
+             "foreign-plugin qt-category warning"}) {
+        QVERIFY2(content.contains(kept), kept.constData());
+    }
+    for (const QByteArray dropped : {"foreign-plugin qt-category debug", "foreign-plugin qt-category info"}) {
+        QVERIFY2(!content.contains(dropped), dropped.constData());
     }
 }
 

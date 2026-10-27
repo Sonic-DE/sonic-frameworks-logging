@@ -9,7 +9,6 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QHash>
-#include <QLibraryInfo>
 #include <QLockFile>
 #include <QMutex>
 #include <QStandardPaths>
@@ -321,7 +320,6 @@ namespace {
         QString binaryName;
         QString executableComponent;
         QString filePath;
-        QString pluginsPath;
         bool setuid = false;
     };
 
@@ -398,8 +396,9 @@ namespace {
             source = {name, name, name.startsWith(QLatin1String("qt."))};
         } else {
             const QString file = QFile::decodeName(info.dli_fname ? info.dli_fname : "");
-            source.fromQt = name.startsWith(QLatin1String("qt.")) || QFileInfo(file).fileName().startsWith(QLatin1String("libQt6"))
-                || (!config->pluginsPath.isEmpty() && file.startsWith(config->pluginsPath + QLatin1Char('/')));
+            // Qt names all its categories qt.*, and its libraries libQt6*. Where a library is installed says
+            // nothing about who wrote it: Qt's plugin directory also holds KDE's, SonicDE's and others' plugins.
+            source.fromQt = name.startsWith(QLatin1String("qt.")) || QFileInfo(file).fileName().startsWith(QLatin1String("libQt6"));
             if (info.dli_fbase == mainProgramBase()) {
                 source.bracket = name;
                 source.component = config->executableComponent.isEmpty() ? config->binaryName : config->executableComponent;
@@ -1070,7 +1069,6 @@ namespace {
         config->setuid = runningSetuid();
         config->binaryName = Internal::cleanBinaryName(options.binaryName.isEmpty() || config->setuid ? defaultBinaryName() : options.binaryName);
         config->executableComponent = executableComponent();
-        config->pluginsPath = QLibraryInfo::path(QLibraryInfo::PluginsPath);
 
         state->pid = getpid();
         state->isRoot = runningAsRoot();
