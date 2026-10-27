@@ -19,7 +19,8 @@
  * \endcode
  *
  * and then logs anywhere in that binary with sonicDebug(), sonicInfo(),
- * sonicWarning() and sonicCritical(). The component ID is the category name,
+ * sonicWarning() and sonicCritical(), or sonicFatal() to log a critical line
+ * and abort. The component ID is the category name,
  * so the standard rules apply, for example
  * QT_LOGGING_RULES="org.sonicde.frameworks.ipc.debug=true".
  *
@@ -66,3 +67,6 @@ __attribute__((visibility("hidden"))) const QLoggingCategory& sonicLoggingCompon
 #define sonicInfo() SONIC_LOGGING_MESSAGE(isInfoEnabled, info)
 #define sonicWarning() SONIC_LOGGING_MESSAGE(isWarningEnabled, warning)
 #define sonicCritical() SONIC_LOGGING_MESSAGE(isCriticalEnabled, critical)
+//! Logs a critical line under the component, then aborts; logging rules can't turn it off.
+#define sonicFatal() \
+    QMessageLogger(QT_MESSAGELOG_FILE, QT_MESSAGELOG_LINE, QT_MESSAGELOG_FUNC, sonicLoggingComponent().categoryName()).fatal()

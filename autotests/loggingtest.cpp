@@ -347,6 +347,7 @@ private Q_SLOTS:
     void journalFieldEncoding();
     void lineFormatPerLevel();
     void fatalLine();
+    void componentFatalLine();
     void userLocation();
     void symlinkName();
     void argvZeroIsCleaned();
@@ -452,6 +453,18 @@ void LoggingTest::fatalLine()
     const Result result = run(sandbox, QStringLiteral("fatal"));
     QCOMPARE(result.exitStatus, QProcess::CrashExit);
     QVERIFY(lineWith(readFile(sandbox.userLog()), "format-fatal").contains("(EE) [" + helperName.toLatin1() + "] format-fatal"));
+}
+
+void LoggingTest::componentFatalLine()
+{
+    // sonicFatal() logs a critical line under its component and aborts, even
+    // when the rules switch every level of that component off.
+    Sandbox sandbox;
+    QProcessEnvironment env = sandbox.environment();
+    env.insert(QStringLiteral("QT_LOGGING_RULES"), QStringLiteral("org.sonicde.test.app.*=false"));
+    const Result result = run(QStringList{QStringLiteral("component-fatal")} + sandbox.userArgs(), env);
+    QCOMPARE(result.exitStatus, QProcess::CrashExit);
+    QVERIFY(lineWith(readFile(sandbox.userLog()), "from-component-fatal").contains("(EE) [org.sonicde.test.app] from-component-fatal"));
 }
 
 void LoggingTest::userLocation()

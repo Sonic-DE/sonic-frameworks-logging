@@ -427,6 +427,8 @@ int main(int argc, char** argv)
         qCritical("format-critical");
     } else if (scenario == QLatin1String("fatal")) {
         qFatal("format-fatal");
+    } else if (scenario == QLatin1String("component-fatal")) {
+        sonicFatal() << "from-component-fatal";
     } else if (scenario == QLatin1String("components")) {
         libaWarning(QStringLiteral("from-liba"));
         libbWarning(QStringLiteral("from-libb"));

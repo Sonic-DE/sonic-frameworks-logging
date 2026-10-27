@@ -63,7 +63,7 @@ SONIC_LOGGING_AUTO_INSTALL()
 
 ### Logging from SonicDE code
 
-Declare the component once per library, plugin or executable, in exactly one `.cpp`, and log with `sonicDebug()`, `sonicInfo()`, `sonicWarning()` and `sonicCritical()`. A second declaration in the same binary, or none, is a link error. Debug messages are on by default only in debug builds of the declaring code; `QT_LOGGING_RULES="org.sonicde.myplugin.debug=true"` turns them on otherwise.
+Declare the component once per library, plugin or executable, in exactly one `.cpp`, and log with `sonicDebug()`, `sonicInfo()`, `sonicWarning()` and `sonicCritical()`. `sonicFatal()` logs a critical line under the component and then aborts; logging rules can't turn it off. A second declaration in the same binary, or none, is a link error. Debug messages are on by default only in debug builds of the declaring code; `QT_LOGGING_RULES="org.sonicde.myplugin.debug=true"` turns them on otherwise.
 
 ## Building
 
