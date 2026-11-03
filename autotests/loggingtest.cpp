@@ -346,6 +346,8 @@ private Q_SLOTS:
     void cleanBinaryName();
     void journalFieldEncoding();
     void lineFormatPerLevel();
+    void mirrorToStderrWithoutTerminal();
+    void noLogFile();
     void fatalLine();
     void componentFatalLine();
     void userLocation();
@@ -446,6 +448,40 @@ void LoggingTest::lineFormatPerLevel()
             + QLatin1Char('$'));
         QVERIFY2(pattern.match(QString::fromUtf8(lineWith(content, message))).hasMatch(), message.constData());
     }
+}
+
+void LoggingTest::mirrorToStderrWithoutTerminal()
+{
+    // QProcess gives the helper a pipe for stderr, as a build system does: lines reach it only with
+    // Options::mirrorToStderr, and always go to the log file.
+    Sandbox plainSandbox;
+    const Result plain = run(plainSandbox, QStringLiteral("formats"));
+    QCOMPARE(plain.exitCode, 0);
+    QVERIFY(!plain.err.contains("format-warning"));
+
+    Sandbox sandbox;
+    const Result result = run(sandbox, QStringLiteral("formats"), {QStringLiteral("--mirror-to-stderr")});
+    QCOMPARE(result.exitCode, 0);
+    QVERIFY(lineWith(result.err, "format-warning").contains("(WW) [" + helperName.toLatin1() + "] format-warning"));
+    QVERIFY(lineWith(result.err, "format-critical").contains("(EE) [" + helperName.toLatin1() + "] format-critical"));
+    QVERIFY(lineWith(readFile(sandbox.userLog()), "format-warning").contains("format-warning"));
+}
+
+void LoggingTest::noLogFile()
+{
+    // Build tools turn the log file off: nothing is created, not even the root log directory when
+    // running as root, and every line goes to stderr.
+    Sandbox userSandbox;
+    const Result user = run(userSandbox, QStringLiteral("formats"), {QStringLiteral("--no-log-file")});
+    QCOMPARE(user.exitCode, 0);
+    QVERIFY(!QFileInfo::exists(userSandbox.userLog()));
+    QVERIFY(lineWith(user.err, "format-warning").contains("(WW) [" + helperName.toLatin1() + "] format-warning"));
+
+    Sandbox rootSandbox;
+    const Result root = run(rootSandbox, QStringLiteral("formats"), {QStringLiteral("--no-log-file")}, true);
+    QCOMPARE(root.exitCode, 0);
+    QVERIFY(!QFileInfo::exists(rootSandbox.rootLogDir()));
+    QVERIFY(lineWith(root.err, "format-critical").contains("(EE) [" + helperName.toLatin1() + "] format-critical"));
 }
 
 void LoggingTest::fatalLine()

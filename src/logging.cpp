@@ -1079,7 +1079,8 @@ namespace {
         }
 
         QByteArray notice;
-        if (state->capture == Capture::None) {
+        // Without a log file (Options::writeLogFile off) no directory is touched; lines go to stderr below.
+        if (state->capture == Capture::None && options.writeLogFile) {
             config->filePath = chooseFilePath(state, config->binaryName, &notice);
         }
 
@@ -1092,7 +1093,8 @@ namespace {
             state->journalFd = openJournal();
             state->journalEnabled = state->journalFd >= 0;
         }
-        state->stderrMirror = options.mirrorToStderrWhenTty && isatty(STDERR_FILENO) && !journalStreamIsStderr();
+        state->stderrMirror = !journalStreamIsStderr()
+            && ((options.mirrorToStderrWhenTty && isatty(STDERR_FILENO)) || (options.mirrorToStderr && state->capture == Capture::None));
 
         if (!config->filePath.isEmpty()) {
             if (options.rotateOnStartup) {

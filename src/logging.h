@@ -33,8 +33,15 @@ struct Options {
     bool journald = true;
     //! Rotate to <file>.last on every run instead of by size.
     bool rotateOnStartup = false;
+    //! Write the program's own log file. Build tools that run inside package builds turn it off, so they
+    //! never create /var/log/sonic or a file in the build user's home; lines then go to stderr (and journald).
+    bool writeLogFile = true;
     //! Mirror lines to stderr when it is a terminal and not already the journal.
     bool mirrorToStderrWhenTty = true;
+    //! Mirror lines to stderr even when it isn't a terminal, for command-line tools whose stderr a
+    //! build system or script reads. Ignored when a service manager captures the output (lines
+    //! already go there) and when stderr is the journal.
+    bool mirrorToStderr = false;
     QStringList dropDebugCategoryPrefixes = {QStringLiteral("qt."), QStringLiteral("kf."), QStringLiteral("libkwin."), QStringLiteral("kwin_")};
     QStringList dropDebugCategoryExact = {QStringLiteral("kwin"), QStringLiteral("heap"), QString()};
     //! Debug messages containing any of these (case-insensitive) are dropped.

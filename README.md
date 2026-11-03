@@ -48,7 +48,23 @@ int main(int argc, char **argv)
 }
 ```
 
-`install()` also works before the application exists. Root services can call `Sonic::Logging::prepareRootLogDirectory()` (for example from a `--prepare-log-directory` option) before their service manager opens a log inside `/var/log/sonic`.
+`install()` also works before the application exists.
+
+Command-line tools whose messages a build system or script reads from stderr (a pipe, not a terminal) pass `.mirrorToStderr = true`, so lines go to stderr as well as to the log file and journald:
+
+```cpp
+Sonic::Logging::install({.mirrorToStderr = true});
+```
+
+It has no effect when a service manager captures the program's output (lines already go there) or when stderr is the journal.
+
+Tools that run inside package builds pass `.writeLogFile = false`, so they never create `/var/log/sonic` (when the build runs as root) or a log file in the build user's home. Lines then go to stderr, where the build reads them, and to journald:
+
+```cpp
+Sonic::Logging::install({.writeLogFile = false});
+```
+
+Root services can call `Sonic::Logging::prepareRootLogDirectory()` (for example from a `--prepare-log-directory` option) before their service manager opens a log inside `/var/log/sonic`.
 
 In a plugin loaded by a host that doesn't install a handler itself:
 
