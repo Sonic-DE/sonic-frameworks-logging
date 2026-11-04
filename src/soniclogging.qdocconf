@@ -1,0 +1,36 @@
+# SPDX-FileCopyrightText: 2026 Joseph Crowell <joseph.w.crowell@gmail.com>
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+include($KDE_DOCS/global/qt-module-defaults.qdocconf)
+
+project = SonicLogging
+description = The SonicDE message handler and logging API
+
+documentationinheaders = true
+
+headerdirs += .
+sourcedirs += .
+
+outputformats = HTML
+
+navigation.landingpage = "Sonic Logging"
+
+depends += \
+    kde \
+    qtcore
+
+qhp.projects            = SonicLogging
+
+qhp.SonicLogging.file                = soniclogging.qhp
+qhp.SonicLogging.namespace           = org.sonicde.soniclogging.$QT_VERSION_TAG
+qhp.SonicLogging.virtualFolder       = soniclogging
+qhp.SonicLogging.indexTitle          = Sonic Logging
+qhp.SonicLogging.indexRoot           =
+
+qhp.SonicLogging.subprojects         = classes
+qhp.SonicLogging.subprojects.classes.title = C++ Classes
+qhp.SonicLogging.subprojects.classes.indexTitle = Sonic Logging C++ Classes
+qhp.SonicLogging.subprojects.classes.selectors = class fake:headerfile
+qhp.SonicLogging.subprojects.classes.sortPages = true
+
+tagfile = soniclogging.tags

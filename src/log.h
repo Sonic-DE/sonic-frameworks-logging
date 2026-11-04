@@ -9,6 +9,9 @@
 #include <QMessageLogger>
 
 /*!
+ * \macro SONIC_LOGGING_COMPONENT(id)
+ * \relates Sonic::Logging
+ *
  * Logging for SonicDE code.
  *
  * Each library, plugin or executable declares its component once, in exactly
@@ -20,13 +23,57 @@
  *
  * and then logs anywhere in that binary with sonicDebug(), sonicInfo(),
  * sonicWarning() and sonicCritical(), or sonicFatal() to log a critical line
- * and abort. The component ID is the category name,
+ * and abort. The component ID \a id is the category name,
  * so the standard rules apply, for example
  * QT_LOGGING_RULES="org.sonicde.frameworks.ipc.debug=true".
+ *
+ * Debug messages are on by default only when the declaring code is a debug
+ * build.
  *
  * A second declaration in the same binary is a duplicate-definition link
  * error, and logging without any declaration is an undefined-symbol link
  * error. Code compiled into several binaries never declares a component.
+ */
+
+/*!
+ * \macro sonicDebug()
+ * \relates Sonic::Logging
+ *
+ * Returns a QDebug stream for a debug message under the binary's component,
+ * declared with SONIC_LOGGING_COMPONENT(). Nothing is formatted when debug
+ * messages are off for the component.
+ */
+
+/*!
+ * \macro sonicInfo()
+ * \relates Sonic::Logging
+ *
+ * Returns a QDebug stream for an info message under the binary's component,
+ * declared with SONIC_LOGGING_COMPONENT().
+ */
+
+/*!
+ * \macro sonicWarning()
+ * \relates Sonic::Logging
+ *
+ * Returns a QDebug stream for a warning under the binary's component,
+ * declared with SONIC_LOGGING_COMPONENT().
+ */
+
+/*!
+ * \macro sonicCritical()
+ * \relates Sonic::Logging
+ *
+ * Returns a QDebug stream for a critical message under the binary's
+ * component, declared with SONIC_LOGGING_COMPONENT().
+ */
+
+/*!
+ * \macro sonicFatal()
+ * \relates Sonic::Logging
+ *
+ * Logs a critical line under the component, then aborts; logging rules can't
+ * turn it off.
  */
 
 namespace Sonic::Logging::Internal {
@@ -67,6 +114,5 @@ __attribute__((visibility("hidden"))) const QLoggingCategory& sonicLoggingCompon
 #define sonicInfo() SONIC_LOGGING_MESSAGE(isInfoEnabled, info)
 #define sonicWarning() SONIC_LOGGING_MESSAGE(isWarningEnabled, warning)
 #define sonicCritical() SONIC_LOGGING_MESSAGE(isCriticalEnabled, critical)
-//! Logs a critical line under the component, then aborts; logging rules can't turn it off.
 #define sonicFatal() \
     QMessageLogger(QT_MESSAGELOG_FILE, QT_MESSAGELOG_LINE, QT_MESSAGELOG_FUNC, sonicLoggingComponent().categoryName()).fatal()

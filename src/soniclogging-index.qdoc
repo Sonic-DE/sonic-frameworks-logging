@@ -1,0 +1,37 @@
+// SPDX-FileCopyrightText: 2026 Joseph Crowell <joseph.w.crowell@gmail.com>
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+/*!
+    \page soniclogging-index.html
+    \title Sonic Logging
+
+    Sonic Logging is the logging library for SonicDE. It installs a Qt message
+    handler that gives every executable its own log file, sends messages to
+    journald where it runs, and gives SonicDE code a small logging API. Logs
+    stay usable without systemd.
+
+    \list
+    \li \l Sonic::Logging: install() sets up the handler for a program.
+    \li \l SONIC_LOGGING_COMPONENT(): declares a binary's component, which
+        sonicDebug(), sonicInfo(), sonicWarning(), sonicCritical() and
+        sonicFatal() log under.
+    \endlist
+
+    \section1 Using the Module
+
+    \section2 Building with CMake
+
+    Use the \c find_package() command to locate the SonicLogging package and
+    link against its target:
+
+    \badcode
+    find_package(SonicLogging REQUIRED)
+    target_link_libraries(mytarget PRIVATE Sonic::Logging)
+    \endcode
+
+    \section1 API Reference
+
+    \list
+        \li \l{Sonic Logging C++ Classes}
+    \endlist
+*/

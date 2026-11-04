@@ -37,6 +37,8 @@ target_include_directories(SonicLogging
     INTERFACE "$<INSTALL_INTERFACE:${KDE_INSTALL_INCLUDEDIR}>"
 )
 
+ecm_generate_qdoc(SonicLogging soniclogging.qdocconf)
+
 install(TARGETS SonicLogging EXPORT SonicLoggingTargets ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 
 # <Sonic/Logging/Logging> and <Sonic/Logging/Log> forward to the lowercase headers installed next to them.
