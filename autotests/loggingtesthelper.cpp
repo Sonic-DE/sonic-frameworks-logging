@@ -89,6 +89,8 @@ Arguments parse(int argc, char** argv)
             arguments.config.journalSocketPath = value();
         } else if (option == "--rotate-on-startup") {
             arguments.options.rotateOnStartup = true;
+        } else if (option == "--rotation-size") {
+            arguments.options.rotationSizeBytes = value().toLongLong();
         } else if (option == "--mirror-to-stderr") {
             arguments.options.mirrorToStderr = true;
         } else if (option == "--no-log-file") {

@@ -41,7 +41,6 @@
 namespace Sonic::Logging {
 namespace {
     constexpr qint64 rotationCheckIntervalMs = 60000;
-    constexpr qint64 rotationSizeBytes = 2097152;
     constexpr qint64 writePauseMs = 60000;
     constexpr int stdoutPollMs = 100;
     const char defaultJournalSocket[] = "/run/systemd/journal/socket";
@@ -910,7 +909,9 @@ namespace {
             reopenFile(state, config);
             return;
         }
-        if (force || (!config->options.rotateOnStartup && open.st_size > rotationSizeBytes)) {
+        const qint64 limit = config->options.rotationSizeBytes;
+        const bool rotatesBySize = limit > 0 && !(state->isRoot && config->options.rotateOnStartup);
+        if (force || (rotatesBySize && open.st_size > limit)) {
             rotateFile(path);
             reopenFile(state, config);
         }

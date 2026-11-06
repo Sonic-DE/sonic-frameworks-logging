@@ -53,9 +53,15 @@ struct Options {
     bool journald = true;
     /*!
      * \variable Sonic::Logging::Options::rotateOnStartup
-     * Rotate to <file>.last on every run instead of by size.
+     * Also rotate to <file>.last on every run. A program running as root then rotates only on
+     * startup, not by size.
      */
     bool rotateOnStartup = false;
+    /*!
+     * \variable Sonic::Logging::Options::rotationSizeBytes
+     * Rotate to <file>.last once the file passes this size. Zero or less turns rotation by size off.
+     */
+    qint64 rotationSizeBytes = 2097152;
     /*!
      * \variable Sonic::Logging::Options::writeLogFile
      * Write the program's own log file. Build tools that run inside package builds turn it off, so they

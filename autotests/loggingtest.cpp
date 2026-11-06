@@ -365,6 +365,7 @@ private Q_SLOTS:
     void prepareRootLogDirectory();
     void rotationOnEveryRun();
     void rotationOnEveryRunWhileLocked();
+    void rotationSizeOption();
     void rotationBySize_data();
     void rotationBySize();
     void inodeReopen();
@@ -722,11 +723,38 @@ void LoggingTest::rotationOnEveryRun()
     QVERIFY(current.contains("run3 0") && !current.contains("run2") && !current.contains("run1"));
     QVERIFY(last.contains("run2 0") && !last.contains("run1") && !last.contains("run3"));
 
-    // Size never rotates these binaries.
+    // Size doesn't rotate these binaries when they run as root.
     Sandbox big;
-    QCOMPARE(run(big, QStringLiteral("rotate-size"), {QStringLiteral("--rotate-on-startup"), QStringLiteral("advance")}).exitCode, 0);
-    QVERIFY(!QFile::exists(big.userLog() + QStringLiteral(".last")));
-    QVERIFY(QFileInfo(big.userLog()).size() > 2097152);
+    QCOMPARE(run(big, QStringLiteral("rotate-size"), {QStringLiteral("--rotate-on-startup"), QStringLiteral("advance")}, true).exitCode, 0);
+    QVERIFY(!QFile::exists(big.rootLog() + QStringLiteral(".last")));
+    QVERIFY(QFileInfo(big.rootLog()).size() > 2097152);
+
+    // Any other user's file still has the size limit.
+    Sandbox user;
+    QCOMPARE(run(user, QStringLiteral("rotate-size"), {QStringLiteral("--rotate-on-startup"), QStringLiteral("advance")}).exitCode, 0);
+    QVERIFY(QFileInfo(user.userLog() + QStringLiteral(".last")).size() > 2097152);
+    QVERIFY(QFileInfo(user.userLog()).size() < 4096);
+}
+
+void LoggingTest::rotationSizeOption()
+{
+    // A different size.
+    Sandbox smaller;
+    QCOMPARE(run(smaller, QStringLiteral("rotate-size"), {QStringLiteral("--rotation-size"), QStringLiteral("1024"), QStringLiteral("advance")}).exitCode, 0);
+    QVERIFY(QFile::exists(smaller.userLog() + QStringLiteral(".last")));
+    QVERIFY(QFileInfo(smaller.userLog()).size() < 4096);
+
+    // Larger than what was written: no rotation.
+    Sandbox larger;
+    QCOMPARE(run(larger, QStringLiteral("rotate-size"), {QStringLiteral("--rotation-size"), QStringLiteral("10485760"), QStringLiteral("advance")}).exitCode, 0);
+    QVERIFY(!QFile::exists(larger.userLog() + QStringLiteral(".last")));
+    QVERIFY(QFileInfo(larger.userLog()).size() > 2097152);
+
+    // Off.
+    Sandbox off;
+    QCOMPARE(run(off, QStringLiteral("rotate-size"), {QStringLiteral("--rotation-size"), QStringLiteral("0"), QStringLiteral("advance")}).exitCode, 0);
+    QVERIFY(!QFile::exists(off.userLog() + QStringLiteral(".last")));
+    QVERIFY(QFileInfo(off.userLog()).size() > 2097152);
 }
 
 void LoggingTest::rotationOnEveryRunWhileLocked()

@@ -21,7 +21,7 @@ See [Sonic-DE/sonic#16](https://github.com/Sonic-DE/sonic/issues/16) for the bac
 
 Each line reads `<timestamp> (DD|II|WW|EE) [<source>] <message>`. The source is the category for the executable's own messages, the library's ID for messages from a library, and the binary name for messages without a category.
 
-**Rotation:** by default a file is renamed to `<file>.last` once it passes 2 MiB, checked at most every 60 s. With `Options::rotateOnStartup`, it is rotated to `.last` on every run instead.
+**Rotation:** by default a file is renamed to `<file>.last` once it passes 2 MiB, checked at most every 60 s. `Options::rotationSizeBytes` sets a different size, and zero turns this off. With `Options::rotateOnStartup`, the file is also rotated to `.last` on every run; a program running as root then rotates only on startup, not by size.
 
 Debug and info messages from Qt itself and other noisy sources are dropped; warnings and errors never are.
 
