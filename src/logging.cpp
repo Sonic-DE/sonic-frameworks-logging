@@ -37,6 +37,11 @@
 #ifdef Q_OS_LINUX
 #include <sys/mman.h>
 #endif
+#ifdef Q_OS_FREEBSD
+#include <sys/param.h>
+#include <sys/sysctl.h>
+#include <sys/user.h>
+#endif
 
 namespace Sonic::Logging {
 namespace {
@@ -160,6 +165,14 @@ namespace {
         if (runningSetuid()) {
 #ifdef Q_OS_LINUX
             return QFileInfo(QFile::symLinkTarget(QStringLiteral("/proc/self/exe"))).fileName();
+#elif defined(Q_OS_FREEBSD)
+            const int name[] = {CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1};
+            char path[PATH_MAX];
+            size_t size = sizeof(path);
+            if (sysctl(name, 4, path, &size, nullptr, 0) == 0) {
+                return QFileInfo(QFile::decodeName(path)).fileName();
+            }
+            return QString::fromLocal8Bit(getprogname());
 #else
             return QString::fromLocal8Bit(getprogname());
 #endif
@@ -585,7 +598,11 @@ namespace {
                     return fd;
                 }
                 close(fd);
-            } else if (errno != ELOOP && errno != ENXIO) {
+            } else if (errno != ELOOP && errno != ENXIO
+#ifdef Q_OS_FREEBSD
+                && errno != EMLINK // FreeBSD's O_NOFOLLOW error for a symlink
+#endif
+            ) {
                 note(QByteArrayLiteral("cannot open ") + path + QByteArrayLiteral(": ") + strerror(errno));
                 return -1;
             }
@@ -608,6 +625,17 @@ namespace {
 
     QString readComm(qint64 pid)
     {
+#ifdef Q_OS_FREEBSD
+        if (testing().config.procRoot.isEmpty()) {
+            const int name[] = {CTL_KERN, KERN_PROC, KERN_PROC_PID, static_cast<int>(pid)};
+            kinfo_proc info{};
+            size_t size = sizeof(info);
+            if (sysctl(name, 4, &info, &size, nullptr, 0) != 0 || size != sizeof(info)) {
+                return {};
+            }
+            return QString::fromLocal8Bit(info.ki_comm);
+        }
+#endif
         const QString procRoot = testing().config.procRoot.isEmpty() ? QStringLiteral("/proc") : testing().config.procRoot;
         QFile file(procRoot + QLatin1Char('/') + QString::number(pid) + QStringLiteral("/comm"));
         if (!file.open(QIODevice::ReadOnly)) {
@@ -631,6 +659,22 @@ namespace {
         return devOk && inoOk && fstat(STDERR_FILENO, &st) == 0 && st.st_dev == device && st.st_ino == inode;
     }
 
+    QString stdoutFileName()
+    {
+#ifdef Q_OS_LINUX
+        return QFileInfo(QFile::symLinkTarget(QStringLiteral("/proc/self/fd/1"))).fileName();
+#elif defined(Q_OS_FREEBSD)
+        kinfo_file info{};
+        info.kf_structsize = sizeof(info);
+        if (fcntl(STDOUT_FILENO, F_KINFO, &info) != 0) {
+            return {};
+        }
+        return QFileInfo(QFile::decodeName(info.kf_path)).fileName();
+#else
+        return {};
+#endif
+    }
+
     Capture detectCapture(bool* stdoutIsFifo)
     {
         *stdoutIsFifo = false;
@@ -646,7 +690,7 @@ namespace {
         const bool regular = S_ISREG(out.st_mode);
         *stdoutIsFifo = fifo;
 
-#ifdef Q_OS_LINUX
+#if defined(Q_OS_LINUX) || defined(Q_OS_FREEBSD)
         const qint64 parentPid = testing().config.parentPid >= 0 ? testing().config.parentPid : getppid();
         const QString parent = readComm(parentPid);
         if (fifo && parent == QLatin1String("runsv")) {
@@ -655,13 +699,14 @@ namespace {
         if (fifo && parent == QLatin1String("s6-supervise")) {
             return Capture::S6;
         }
-        if ((fifo || regular) && parent == QLatin1String("supervise-daemon")) {
+        // Linux keeps 15 characters of a command name, so OpenRC's supervisor shows as "supervise-daemo".
+        if ((fifo || regular) && (parent == QLatin1String("supervise-daemon") || parent == QLatin1String("supervise-daemo"))) {
             return Capture::OpenRC;
         }
         if ((fifo || regular) && parentPid == 1 && readComm(1) == QLatin1String("dinit")) {
             return Capture::Dinit;
         }
-        if (regular && QFileInfo(QFile::symLinkTarget(QStringLiteral("/proc/self/fd/1"))).fileName() == QLatin1String(".xsession-errors")) {
+        if (regular && stdoutFileName() == QLatin1String(".xsession-errors")) {
             return Capture::XSession;
         }
 #endif

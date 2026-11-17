@@ -305,7 +305,8 @@ void writeComm(const QString& procRoot, qint64 pid, const QByteArray& comm)
     QDir().mkpath(directory);
     QFile file(directory + QStringLiteral("/comm"));
     QVERIFY(file.open(QIODevice::WriteOnly));
-    file.write(comm + '\n');
+    // Like Linux, which keeps 15 characters (TASK_COMM_LEN - 1).
+    file.write(comm.left(15) + '\n');
 }
 
 int bindJournal(const QString& path)
@@ -1187,7 +1188,9 @@ void LoggingTest::longLineThroughSlowPipe()
     writeComm(procRoot, 4242, "runsv");
     int outPipe[2];
     QCOMPARE(pipe2(outPipe, O_CLOEXEC), 0);
+#ifdef F_SETPIPE_SZ // Linux only; elsewhere the pipe keeps its default size
     fcntl(outPipe[0], F_SETPIPE_SZ, 4096);
+#endif
     const int devNull = open("/dev/null", O_RDWR | O_CLOEXEC);
     const QStringList arguments = QStringList{QStringLiteral("bigline"), QStringLiteral("--proc-root"), procRoot, QStringLiteral("--parent-pid"), QStringLiteral("4242")}
         + sandbox.userArgs();
